@@ -6,7 +6,7 @@ import hashlib
 #api at http://developer.boxee.tv/Remote_Control_Interface
 
 BOXEE_APPLICATION_NAME = "boxee"
-BOXEE_SHARED_KEY = ""
+BOXEE_SHARED_KEY = "b0xeeRem0tE!"
 BOXEE_UDP_PORT = 2562
 TIMEOUT = 0.500
 BUFFER_SIZE = 1024
@@ -69,11 +69,16 @@ class Discoverer(object):
     __call__ = get_servers
         
 def main():
+    from optparse import OptionParser
     import sys
+    parser = OptionParser(usage="%prog [options]",
+                          description=("lists boxee servers on the "
+                                       "local network"))
+    args, opts = parser.parse_args()
     d = Discoverer()
     servers = d()
     if len(servers)==0:
-        print "no servers found"
+        print >> sys.stderr, "no servers found"
         sys.exit(1)
     else:
         for server in servers:
