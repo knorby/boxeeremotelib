@@ -1,6 +1,9 @@
+#!/usr/bin/env python
 import socket
 import hashlib
 
+#somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
+#api at http://developer.boxee.tv/Remote_Control_Interface
 
 BOXEE_APPLICATION_NAME = "boxee"
 BOXEE_SHARED_KEY = ""
@@ -10,6 +13,8 @@ BUFFER_SIZE = 1024
 
 
 class Discoverer(object):
+    """Tool to discover any boxee servers on the local network
+    following the boxee remote control api"""
 
     def __init__(self, shared_key=BOXEE_SHARED_KEY, port=BOXEE_UDP_PORT,
                  timeout=TIMEOUT, buffer_size=BUFFER_SIZE,
@@ -63,3 +68,16 @@ class Discoverer(object):
 
     __call__ = get_servers
         
+def main():
+    import sys
+    d = Discoverer()
+    servers = d()
+    if len(servers)==0:
+        print "no servers found"
+        sys.exit(1)
+    else:
+        for server in servers:
+            print server
+
+if __name__=="__main__":
+    main()
