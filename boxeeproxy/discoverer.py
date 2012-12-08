@@ -1,15 +1,22 @@
 #!/usr/bin/env python
 import socket
 import hashlib
+import random
 
 #somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
 #api at http://developer.boxee.tv/Remote_Control_Interface
 
-BOXEE_APPLICATION_NAME = "boxee"
+BOXEE_APPLICATION_NAME = "iphone_remote"
 BOXEE_SHARED_KEY = "b0xeeRem0tE!"
 BOXEE_UDP_PORT = 2562
 TIMEOUT = 0.500
 BUFFER_SIZE = 1024
+
+def get_random_string(min_length=5, max_length=15):
+    chrs = [chr(x) for x in range(ord('A'), ord('Z')+1)]
+    chrs.extend([chr(x) for x in range(ord('a'), ord('z')+1)])
+    return ''.join(random.choice(chrs) for i in
+                   xrange(random.randint(min_length, max_length)))
 
 
 class Discoverer(object):
@@ -23,24 +30,24 @@ class Discoverer(object):
         self.port = port
         self.buffer_size = buffer_size
         self.timeout = timeout
-        self.challenge = "foo"
+        self.challenge = get_random_string()
         self.application_name = application_name
 
     def _get_socket(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind(('0.0.0.0', self.port))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         s.settimeout(self.timeout)
+        s.bind(('', 0))
         return s
 
     def _get_signature(self):
         m = hashlib.md5()
         m.update(self.challenge)
         m.update(self.shared_key)
-        return m.digest()
+        return m.hexdigest()
 
     def send_request(self, sock):
-        msg = ('<?xml version="1.0"?>'
+        msg = ('<?xml version="1.0"?>\n'
                '<BDP1 cmd="discover" application="%s" challenge="%s" '
                'signature="%s"/>'
                % (self.application_name, self.challenge,
