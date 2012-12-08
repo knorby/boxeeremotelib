@@ -2,6 +2,10 @@
 import socket
 import hashlib
 import random
+try:
+    from xml.etree import cElementTree as etree
+except ImportError:
+    from xml.etree import ElementTree as etree
 
 #somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
 #api at http://developer.boxee.tv/Remote_Control_Interface
@@ -40,9 +44,9 @@ class Discoverer(object):
         s.bind(('', 0))
         return s
 
-    def _get_signature(self):
+    def _get_signature(self, challenge=None):
         m = hashlib.md5()
-        m.update(self.challenge)
+        m.update(challenge)
         m.update(self.shared_key)
         return m.hexdigest()
 
@@ -51,9 +55,21 @@ class Discoverer(object):
                '<BDP1 cmd="discover" application="%s" challenge="%s" '
                'signature="%s"/>'
                % (self.application_name, self.challenge,
-                  self._get_signature()))
+                  self._get_signature(self.challenge)))
         sock.sendto(msg, ('<broadcast>', self.port))
 
+    def _parse_response(self, resp):
+        elem = etree.fromstring(resp)
+        if (elem.get("signature", "-invalid-").upper() ==
+            self._get_signature(elem.get("response", "")).upper()):
+            return {'name': elem.get('name', "boxeebox"),
+                    "http_port": int(elem.get("httpPort", 8800)),
+                    "application": elem.get("application", "boxee"),
+                    "http_auth_required": (elem.get("httpAuthRequired",
+                                                    "false")=="true"),
+                    "version": elem.get("version", -1)}
+        return None
+        
     def recv_responses(self, sock):
         responses = []
         if not self.timeout>0:
@@ -64,9 +80,10 @@ class Discoverer(object):
                 responses.append((addr[0], data))
         except socket.timeout:
             pass
-        sig = self._get_signature()
-        #XXX: verify responses
-        return [server for server,packet in responses]
+        #keeping this 2.6 compatible, so no dict expression
+        return dict(i for i in ((ip,self._parse_response(resp))
+                                for ip,resp in responses)
+                    if i[1] is not None)
 
     def get_servers(self):
         sock = self._get_socket()
