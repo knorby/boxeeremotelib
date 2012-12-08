@@ -62,11 +62,11 @@ class CommandBool(Command):
 def _get_bool_command(command):
     return functools.partial(CommandBool, command=command)
 
-_pause_command = _get_bool_command("Pause")
-_stop_command = _get_bool_command("Stop")
-_mute_command = _get_bool_command("Mute")
-_playnext_command = _get_bool_command("PlayNext")
-_playprev_command = _get_bool_command("PlayPrev")
+_command_pause = _get_bool_command("Pause")
+_command_stop = _get_bool_command("Stop")
+_command_mute = _get_bool_command("Mute")
+_command_playnext = _get_bool_command("PlayNext")
+_command_playprev = _get_bool_command("PlayPrev")
 
 class CommandSetValue(CommandBool):
 
@@ -77,9 +77,9 @@ class CommandSetValue(CommandBool):
 def _get_setval_command(command):
     return functools.partial(CommandSetValue, command=command)    
 
-_setvolume_command = _get_setval_command("SetVolume")
-_seekpercentage_command = _get_setval_command("SeekPercentage")
-_seekpercentagerelative_command = _get_setval_command("SeekPercentageRelative")
+_command_setvolume = _get_setval_command("SetVolume")
+_command_seekpercentage = _get_setval_command("SeekPercentage")
+_command_seekpercentagerelative = _get_setval_command("SeekPercentageRelative")
 
 class CommandSendKey(CommandBool):
 
@@ -127,11 +127,45 @@ def _get_int_command(command):
 _command_getvolume = _get_int_command("GetVolume")
 _command_getpercentage = _get_int_command("GetPercentage")
 
+_commands = {
+    "pause": _command_pause,
+    "stop": _command_stop,
+    "mute": _command_mute,
+    "playnext": _command_playnext,
+    "playprev": _command_playprev,
+    "setvolume": _command_setvolume,
+    "seekpercentage": _command_seekpercentage,
+    "seekpercentagerelative": _command_seekpercentagerelative,
+    "select": _command_select,
+    "back": _command_back,
+    "up": _command_up,
+    "down": _command_down,
+    "left": _command_left,
+    "right": _command_right,
+    "backspace": _command_backspace,
+    "getvolume": _command_getvolume,
+    "getpercentage": _command_getpercentage,
+    }
 
         
 class CommandSpawner(object):
 
-    def __init__(self, host, port=8800):
+    def __init__(self, host, port=8800, commandQueue=None):
         self.host = host
         self.port = port
+        self._command_args = [self.host, self.port]
+        self.commandQueue = None
+
+    def _handle_command(self, command, command_value=None):
+        command_args = self._command_args
+        command_kwargs = {}
+        if command_value is not None:
+            command_kwargs['value'] = command_value
+        #XXX: this is really messy
+        if self.commandQueue:
+            pass
+        else:
+            return command(*command_args, **command_kwargs)
+        
+    
 
