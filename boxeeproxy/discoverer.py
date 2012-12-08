@@ -7,12 +7,12 @@ try:
 except ImportError:
     from xml.etree import ElementTree as etree
 
+from . import (BOXEE_APPLICATION_NAME, BOXEE_SHARED_KEY, BOXEE_UDP_PORT,
+               BOXEE_HTTP_PORT_DEFAULT)
+
 #somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
 #api at http://developer.boxee.tv/Remote_Control_Interface
 
-BOXEE_APPLICATION_NAME = "iphone_remote"
-BOXEE_SHARED_KEY = "b0xeeRem0tE!"
-BOXEE_UDP_PORT = 2562
 TIMEOUT = 0.500
 BUFFER_SIZE = 1024
 
@@ -63,7 +63,8 @@ class Discoverer(object):
         if (elem.get("signature", "-invalid-").upper() ==
             self._get_signature(elem.get("response", "")).upper()):
             return {'name': elem.get('name', "boxeebox"),
-                    "http_port": int(elem.get("httpPort", 8800)),
+                    "http_port": int(elem.get("httpPort",
+                                              BOXEE_HTTP_PORT_DEFAULT)),
                     "application": elem.get("application", "boxee"),
                     "http_auth_required": (elem.get("httpAuthRequired",
                                                     "false")=="true"),
@@ -107,6 +108,3 @@ def main():
     else:
         for server in servers:
             print server
-
-if __name__=="__main__":
-    main()

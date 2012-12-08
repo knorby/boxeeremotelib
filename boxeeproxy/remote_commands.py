@@ -3,7 +3,7 @@ import urllib2
 import re
 import functools
 
-class CommandError(RuntimeError): pass
+from . import BOXEE_HTTP_PORT_DEFAULT, CommandError
 
 class Command(object):
 
@@ -49,7 +49,7 @@ class Command(object):
 
     def __repr__(self):
         return (u'<%s host="%s" port=%s command="%s">'
-                % (self.__name__, self.host, self.port, self.command))
+                % (self.__class__.__name__, self.host, self.port, self.command))
 
 
 class CommandBool(Command):
@@ -150,11 +150,12 @@ _commands = {
         
 class CommandSpawner(object):
 
-    def __init__(self, host, port=8800, commandQueue=None):
+    def __init__(self, host, http_port=BOXEE_HTTP_PORT_DEFAULT,
+                 command_queue=None):
         self.host = host
-        self.port = port
-        self._command_args = [self.host, self.port]
-        self.commandQueue = None
+        self.http_port = http_port
+        self._command_args = [self.host, self.http_port]
+        self.command_queue = None
 
     def _handle_command(self, command, command_value=None):
         command_args = self._command_args
@@ -166,6 +167,10 @@ class CommandSpawner(object):
             pass
         else:
             return command(*command_args, **command_kwargs)
-        
-    
+
+    @classmethod
+    def from_discovery_result(cls, host, discovery_keys, command_queue=None):
+        return cls(host,
+                   discovery_keys.get("http_port", BOXEE_HTTP_PORT_DEFAULT),
+                   command_queue)
 
