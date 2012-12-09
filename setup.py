@@ -2,16 +2,16 @@
 from setuptools import setup
 
 setup(
-    name='boxeeremoteproxy',
+    name='boxeeremotelib',
     version='0.1',
     include_package_data=True,
     zip_safe=False,
     platforms='any',
-    packages=['boxeeproxy'],
+    packages=['boxeeremotelib'],
     entry_points = {
         'console_scripts': [
-            'boxee_discover = boxeeproxy.discoverer:main',
-            'boxee_command = boxeeproxy:main'
+            'boxee_discover = boxeeremotelib.discoverer:main',
+            'boxee_command = boxeeremotelib:main'
             ],
         },
     )
