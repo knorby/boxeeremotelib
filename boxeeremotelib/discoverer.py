@@ -10,7 +10,6 @@ from . import (BOXEE_APPLICATION_NAME, BOXEE_SHARED_KEY, BOXEE_UDP_PORT,
                BOXEE_HTTP_PORT_DEFAULT)
 
 #somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
-#api at http://developer.boxee.tv/Remote_Control_Interface
 
 TIMEOUT = 0.500
 BUFFER_SIZE = 1024

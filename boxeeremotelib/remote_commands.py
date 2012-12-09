@@ -233,7 +233,6 @@ class CommandInterface(object):
             return self._single_wrapper(_SET_COMMANDS[attr_name], attr_name,
                                         True)
         elif attr_name in _META_COMMANDS:
-            print "handling '%s'" % attr_name
             return self._multi_wrapper(_META_COMMANDS[attr_name], attr_name,
                                        True)
         elif "_" in attr_name:
