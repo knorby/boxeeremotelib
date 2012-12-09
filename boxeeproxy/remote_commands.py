@@ -4,6 +4,7 @@ import re
 import functools
 
 from . import BOXEE_HTTP_PORT_DEFAULT, CommandError
+from .utils import MultiBoolCallbackHandler
 
 class Command(object):
 
@@ -13,14 +14,11 @@ class Command(object):
         self.host = host
         self.port = port
         self.command = command
-        self.url = ("http://%s:%d/xbmcCmds/xbmcHttp?command=%s"
-                    % (host, port, command))
+        self._url = ("http://%s:%d/xbmcCmds/xbmcHttp?command=%s"
+                     % (host, port, command))
 
-    def send_request(self):
-        try:
-            return urllib2.urlopen(self.url)
-        except urllib2.URLError, e:
-            raise CommandError(e)
+    def get_url(self):
+        return self._url
 
     def extract_response_value(self, response_text):
         m = self.RESPONSE_EXPR.match(response_text)
@@ -31,25 +29,37 @@ class Command(object):
     def handle_response_value(self, response_value):
         raise NotImplementedError("command sub-classes required")
 
-    def handle_response(self, response):
+    def _handle_response(self, response):
         response_text = self.extract_response_value(response.read())
         if response.getcode()==200 and response_text is not None:
             if response_text.startswith("Error:"):
                 raise CommandError(response_text.split(":", 1)[1].strip())
             return response_text
         return None
-    
+
+    def handle_response(self, response):
+        resp_value = self._handle_response(response)
+        return self.handle_response_value(resp_value)
+            
     def run(self):
         resp = self.send_request()
-        resp_value = self.handle_response(resp)
-        return self.handle_response_value(resp_value)
 
     def __unicode__(self):
         return self.command
 
     def __repr__(self):
         return (u'<%s host="%s" port=%s command="%s">'
-                % (self.__class__.__name__, self.host, self.port, self.command))
+                % (self.__class__.__name__, self.host, self.port,
+                   self.command))
+
+
+def simple_command_runner(cmd, cb=None):
+    try:
+        res = cmd.handle_response(urllib2.urlopen(cmd.get_url()))
+        if cb:
+            cb(res)
+    except urllib2.URLError, e:
+        raise CommandError(e)
 
 
 class CommandBool(Command):
@@ -62,11 +72,13 @@ class CommandBool(Command):
 def _get_bool_command(command):
     return functools.partial(CommandBool, command=command)
 
-_command_pause = _get_bool_command("Pause")
-_command_stop = _get_bool_command("Stop")
-_command_mute = _get_bool_command("Mute")
-_command_playnext = _get_bool_command("PlayNext")
-_command_playprev = _get_bool_command("PlayPrev")
+
+_COMMAND_PAUSE = _get_bool_command("Pause")
+_COMMAND_STOP = _get_bool_command("Stop")
+_COMMAND_MUTE = _get_bool_command("Mute")
+_COMMAND_PLAYNEXT = _get_bool_command("PlayNext")
+_COMMAND_PLAYPREV = _get_bool_command("PlayPrev")
+
 
 class CommandSetValue(CommandBool):
 
@@ -74,12 +86,13 @@ class CommandSetValue(CommandBool):
         command = "%s(%d)" % (command, value)
         super(CommandSendKey, self).__init__(host, port, command)
 
+
 def _get_setval_command(command):
     return functools.partial(CommandSetValue, command=command)    
 
-_command_setvolume = _get_setval_command("SetVolume")
-_command_seekpercentage = _get_setval_command("SeekPercentage")
-_command_seekpercentagerelative = _get_setval_command("SeekPercentageRelative")
+_COMMAND_SETVOLUME = _get_setval_command("SetVolume")
+_COMMAND_SEEKPERCENTAGE = _get_setval_command("SeekPercentage")
+_COMMAND_SEEKPERCENTAGERELATIVE = _get_setval_command("SeekPercentageRelative")
 
 class CommandSendKey(CommandBool):
 
@@ -92,24 +105,23 @@ class CommandSendKeyAscii(CommandSendKey):
 
     def __init__(self, host, port, char):
         super(CommandSendKeyAscii, self).__init__(host, port,
-                                                  61696 + org(char))
+                                                  61696 + ord(char))
 
 
 def _get_key_command(code):
     return functools.partial(CommandSendKey, key_code=code)
 
-_command_select = _get_key_command(256)
-_command_back = _get_key_command(257)
-_command_up = _get_key_command(270)
-_command_down = _get_key_command(271)
-_command_left = _get_key_command(272)
-_command_right = _get_key_command(273)
-_command_backspace = _get_key_command(61704)
+_COMMAND_SELECT = _get_key_command(256)
+_COMMAND_BACK = _get_key_command(257)
+_COMMAND_UP = _get_key_command(270)
+_COMMAND_DOWN = _get_key_command(271)
+_COMMAND_LEFT = _get_key_command(272)
+_COMMAND_RIGHT = _get_key_command(273)
+_COMMAND_BACKSPACE = _get_key_command(61704)
 
-def _string_to_commands(host, port, a_str):
+def _string_to_commands(a_str):
     for char in a_str:
-        yield CommandSendKeyAscii(host, port, char)
-
+        yield functools.partial(CommandSendKeyAscii, char=char)
 
 class CommandInt(Command):
 
@@ -124,53 +136,110 @@ class CommandInt(Command):
 def _get_int_command(command):
     return functools.partial(CommandInt, command=command)
 
-_command_getvolume = _get_int_command("GetVolume")
-_command_getpercentage = _get_int_command("GetPercentage")
+_COMMAND_GETVOLUME = _get_int_command("GetVolume")
+_COMMAND_GETPERCENTAGE = _get_int_command("GetPercentage")
 
-_commands = {
-    "pause": _command_pause,
-    "stop": _command_stop,
-    "mute": _command_mute,
-    "playnext": _command_playnext,
-    "playprev": _command_playprev,
-    "setvolume": _command_setvolume,
-    "seekpercentage": _command_seekpercentage,
-    "seekpercentagerelative": _command_seekpercentagerelative,
-    "select": _command_select,
-    "back": _command_back,
-    "up": _command_up,
-    "down": _command_down,
-    "left": _command_left,
-    "right": _command_right,
-    "backspace": _command_backspace,
-    "getvolume": _command_getvolume,
-    "getpercentage": _command_getpercentage,
+_SET_COMMANDS = {
+    "setvolume": _COMMAND_SETVOLUME,
+    "seekpercentage": _COMMAND_SEEKPERCENTAGE,
+    "seekpercentagerelative": _COMMAND_SEEKPERCENTAGERELATIVE,
+    }    
+
+_COMMANDS = {
+    "pause": _COMMAND_PAUSE,
+    "stop": _COMMAND_STOP,
+    "mute": _COMMAND_MUTE,
+    "playnext": _COMMAND_PLAYNEXT,
+    "playprev": _COMMAND_PLAYPREV,
+    "select": _COMMAND_SELECT,
+    "back": _COMMAND_BACK,
+    "up": _COMMAND_UP,
+    "down": _COMMAND_DOWN,
+    "left": _COMMAND_LEFT,
+    "right": _COMMAND_RIGHT,
+    "backspace": _COMMAND_BACKSPACE,
+    "getvolume": _COMMAND_GETVOLUME,
+    "getpercentage": _COMMAND_GETPERCENTAGE,
     }
 
+_META_COMMANDS = {
+    "setstring": _string_to_commands,
+    }
         
 class CommandSpawner(object):
 
-    def __init__(self, host, http_port=BOXEE_HTTP_PORT_DEFAULT,
-                 command_queue=None):
+    def __init__(self, host, http_port=BOXEE_HTTP_PORT_DEFAULT):
         self.host = host
         self.http_port = http_port
         self._command_args = [self.host, self.http_port]
-        self.command_queue = None
 
     def _handle_command(self, command, command_value=None):
         command_args = self._command_args
         command_kwargs = {}
         if command_value is not None:
             command_kwargs['value'] = command_value
-        #XXX: this is really messy
-        if self.commandQueue:
-            pass
-        else:
-            return command(*command_args, **command_kwargs)
+        return command(*command_args, **command_kwargs)
 
     @classmethod
-    def from_discovery_result(cls, host, discovery_keys, command_queue=None):
+    def from_discovery_result(cls, host, discovery_keys):
         return cls(host,
-                   discovery_keys.get("http_port", BOXEE_HTTP_PORT_DEFAULT),
-                   command_queue)
+                   discovery_keys.get("http_port", BOXEE_HTTP_PORT_DEFAULT))
 
+
+class CommandInterface(object):
+
+    def __init__(self, command_spawner, command_handler=simple_command_runner):
+        self.command_spawner = command_spawner
+        self.command_handler = command_handler
+
+    def _single_wrapper(self, cmd, name, setter=False):
+        if setter:
+            def run(command_value=None, cb=None):
+                comp = self.command_spawner._handle_command(cmd, command_value)
+                self.command_handler(comp, cb)
+        else:
+            def run(cb=None):
+                comp = self.command_spawner._handle_command(cmd)
+                self.command_handler(comp, cb)
+        run.__name__ = name
+        return run
+
+    def _multi_wrapper(self, cmds, name, meta=False):
+        if not meta:
+            def run(cb=None):
+                multi_cb = MultiBoolCallbackHandler(cb)
+                for cmd in cmds:
+                    comp = self.command_spawner._handle_command(cmd)
+                    self.command_handler(comp, multi_cb.get_cb())
+        else:
+            def run(command_value=None, cb=None):
+                multi_cb = MultiBoolCallbackHandler(cb)
+                for cmd in cmds(command_value):
+                    comp = self.command_spawner._handle_command(cmd)
+                    self.command_handler(comp, multi_cb.get_cb())
+        run.__name__ = name
+        return run
+        
+    def __dir__(self):
+        listing = _COMMANDS.keys()
+        listing.extend(_SET_COMMANDS.keys())
+        listing.extend(_META_COMMANDS.keys())
+        return listing
+
+    def __getattr__(self, attr_name):
+        if attr_name in _COMMANDS:
+            return self._single_wrapper(_COMMANDS[attr_name], attr_name)
+        elif attr_name in _SET_COMMANDS:
+            return self._single_wrapper(_SET_COMMANDS[attr_name], attr_name,
+                                        True)
+        elif attr_name in _META_COMMANDS:
+            print "handling '%s'" % attr_name
+            return self._multi_wrapper(_META_COMMANDS[attr_name], attr_name,
+                                       True)
+        elif "_" in attr_name:
+            command_name, num = attr_name.split("_", 1)
+            if num.isdigit() and command_name in _COMMANDS:
+                cmd = _COMMANDS[command_name]
+                return self._multi_wrapper((cmd for i in xrange(int(num))),
+                                           attr_name)
+        raise AttributeError("Unknown Command")
