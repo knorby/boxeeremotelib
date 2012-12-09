@@ -10,7 +10,8 @@ setup(
     packages=['boxeeproxy'],
     entry_points = {
         'console_scripts': [
-            'boxee_discover = boxeeproxy.discoverer:main'
+            'boxee_discover = boxeeproxy.discoverer:main',
+            'boxee_command = boxeeproxy:main'
             ],
         },
     )
