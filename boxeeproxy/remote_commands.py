@@ -194,11 +194,11 @@ class CommandInterface(object):
 
     def _single_wrapper(self, cmd, name, setter=False):
         if setter:
-            def run(command_value=None, cb=None):
+            def run(command_value=None, cb=None, **kwargs):
                 comp = self.command_spawner._handle_command(cmd, command_value)
                 self.command_handler(comp, cb)
         else:
-            def run(cb=None):
+            def run(cb=None, **kwargs):
                 comp = self.command_spawner._handle_command(cmd)
                 self.command_handler(comp, cb)
         run.__name__ = name
@@ -206,13 +206,13 @@ class CommandInterface(object):
 
     def _multi_wrapper(self, cmds, name, meta=False):
         if not meta:
-            def run(cb=None):
+            def run(cb=None, **kwargs):
                 multi_cb = MultiBoolCallbackHandler(cb)
                 for cmd in cmds:
                     comp = self.command_spawner._handle_command(cmd)
                     self.command_handler(comp, multi_cb.get_cb())
         else:
-            def run(command_value=None, cb=None):
+            def run(command_value=None, cb=None, **kwargs):
                 multi_cb = MultiBoolCallbackHandler(cb)
                 for cmd in cmds(command_value):
                     comp = self.command_spawner._handle_command(cmd)
