@@ -91,10 +91,10 @@ class Discoverer(object):
         return self.recv_responses(sock)
 
     __call__ = get_servers
-        
+
+
 def main():
     from optparse import OptionParser
-    import sys
     parser = OptionParser(usage="%prog [options]",
                           description=("lists boxee servers on the "
                                        "local network"))
@@ -102,8 +102,7 @@ def main():
     d = Discoverer()
     servers = d()
     if len(servers)==0:
-        print >> sys.stderr, "no servers found"
-        sys.exit(1)
+        parser.error("no servers found")
     else:
-        for server in servers:
-            print server
+        for server, opts in servers.iteritems():
+            print ("%s:%d" % (server, opts.get("http_port", BOXEE_HTTP_PORT_DEFAULT)))
