@@ -1,6 +1,5 @@
 import socket
 import hashlib
-import random
 try:
     from xml.etree import cElementTree as etree
 except ImportError:
@@ -8,17 +7,10 @@ except ImportError:
 
 from . import (BOXEE_APPLICATION_NAME, BOXEE_SHARED_KEY, BOXEE_UDP_PORT,
                BOXEE_HTTP_PORT_DEFAULT)
-
-#somewhat based on http://code.google.com/p/boxeeremote/source/browse/trunk/Boxee%20Remote/src/com/andrewchatham/Discoverer.java
+from .utils import get_random_string
 
 TIMEOUT = 0.500
 BUFFER_SIZE = 1024
-
-def get_random_string(min_length=5, max_length=15):
-    chrs = [chr(x) for x in range(ord('A'), ord('Z')+1)]
-    chrs.extend([chr(x) for x in range(ord('a'), ord('z')+1)])
-    return ''.join(random.choice(chrs) for i in
-                   xrange(random.randint(min_length, max_length)))
 
 
 class Discoverer(object):

@@ -1,3 +1,6 @@
+import random
+
+
 class MultiResultCallbackHandler(object):
 
     def __init__(self, cb=None):
@@ -18,6 +21,7 @@ class MultiResultCallbackHandler(object):
         self._count+=1
         return self._result_cb
 
+
 class MultiBoolCallbackHandler(MultiResultCallbackHandler):
 
     def _fire(self):
@@ -25,3 +29,8 @@ class MultiBoolCallbackHandler(MultiResultCallbackHandler):
             self._cb(all(self._results))
         
         
+def get_random_string(min_length=5, max_length=15):
+    chrs = [chr(x) for x in range(ord('A'), ord('Z')+1)]
+    chrs.extend([chr(x) for x in range(ord('a'), ord('z')+1)])
+    return ''.join(random.choice(chrs) for i in
+                   xrange(random.randint(min_length, max_length)))

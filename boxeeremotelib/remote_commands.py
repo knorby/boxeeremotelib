@@ -83,8 +83,8 @@ _COMMAND_PLAYPREV = _get_bool_command("PlayPrev")
 class CommandSetValue(CommandBool):
 
     def __init__(self, host, port, command, value):
-        command = "%s(%d)" % (command, value)
-        super(CommandSendKey, self).__init__(host, port, command)
+        command = "%s(%s)" % (command, int(value))
+        super(CommandSetValue, self).__init__(host, port, command)
 
 
 def _get_setval_command(command):
