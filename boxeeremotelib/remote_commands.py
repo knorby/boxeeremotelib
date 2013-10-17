@@ -7,6 +7,10 @@ from . import BOXEE_HTTP_PORT_DEFAULT, CommandError
 from .utils import MultiBoolCallbackHandler
 
 class Command(object):
+    '''
+
+    '''
+
 
     RESPONSE_EXPR = re.compile(r"<html>\n<li>(.*?)</html>")
 
@@ -55,7 +59,7 @@ class Command(object):
 
 def simple_command_runner(cmd, cb=None):
     try:
-        res = cmd.handle_response(urllib2.urlopen(cmd.get_url()))
+        res = cmd.handle_response(urllib2.urlopen(cmd.get_url(), timeout=1))
         if cb:
             cb(res)
     except urllib2.URLError, e:
